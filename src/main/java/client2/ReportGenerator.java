@@ -33,11 +33,11 @@ public class ReportGenerator {
         double meanLatency = sumOfLatency / (double) lenOfReport;
         int ninetyNinePercentile = percentile(sortedLatency, 99);
 
-        System.out.printf("Min Latency: %d%n", minLatency);
-        System.out.printf("Max Latency: %d%n", maxLatency);
-        System.out.printf("Average Latency: %f.2%n", meanLatency);
-        System.out.printf("Median Latency: %d%n", medianLatency);
-        System.out.printf("99th percentile Latency: %d%n", ninetyNinePercentile);
+        System.out.printf("Min Latency: %d ms%n", minLatency);
+        System.out.printf("Max Latency: %d ms%n", maxLatency);
+        System.out.printf("Average Latency: %f.2 ms%n", meanLatency);
+        System.out.printf("Median Latency: %d ms%n", medianLatency);
+        System.out.printf("99th percentile Latency: %d ms%n", ninetyNinePercentile);
     }
 
     private int percentile(List<Integer> latencies, double percentile) {
