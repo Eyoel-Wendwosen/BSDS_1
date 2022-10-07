@@ -27,10 +27,9 @@ import java.util.concurrent.TimeUnit;
 
 public class Client2 implements Runnable {
     private final int TOTAL_NUM_OF_REQUEST = 1000;
-    private static final String localURL = "http://localhost:8080/";
-    private static final String EC2URL = "http://ec2-52-25-141-133.us-west-2.compute.amazonaws.com:8080/";
-    private static final String APP_NAME = "Java_Servlet_war_exploded";
-    private static final String EC2_APP_NAME = "Java_Servlet_war";
+    private final String URL;
+    private final String APP_NAME;
+    private String PORT;
     private final Object synchronizationObject;
     private final HttpClient client;
     private final BlockingQueue<SkiEvent> queue;
@@ -39,11 +38,13 @@ public class Client2 implements Runnable {
     private final ConcurrentHashMap<String, List<Report>> reportMap;
 
 
-    public Client2(BlockingQueue<SkiEvent> queue, Status status, boolean isFirst32, ConcurrentHashMap<String, List<Report>> concurrentHashMap) {
+    public Client2(BlockingQueue<SkiEvent> queue, Status status, boolean isFirst32, String url, String appName, String port, ConcurrentHashMap<String, List<Report>> concurrentHashMap) {
         this.isFirst32 = isFirst32;
         this.queue = queue;
         this.synchronizationObject = new Object();
         this.status = status;
+        this.URL = String.format("%s:%s", url, port);
+        this.APP_NAME = appName;
         this.reportMap = concurrentHashMap;
         this.client = HttpClients.custom().addInterceptorLast(new HttpResponseInterceptor() {
             @Override
@@ -78,18 +79,24 @@ public class Client2 implements Runnable {
     }
 
     private void sendRequest() {
-        HttpPost postMethod = new HttpPost(EC2URL);
+        HttpPost postMethod = new HttpPost(URL);
         SkiEvent randomSkiEvent = null;
         try {
             randomSkiEvent = queue.poll(100, TimeUnit.MILLISECONDS);
             if (randomSkiEvent == null) return;
 
-            URIBuilder uri = new URIBuilder(EC2URL);
-            uri.setPath(String.format("%s/skiers/%d/seasons/%d/days/%d/skiers/%d", EC2_APP_NAME, randomSkiEvent.getResortId(), randomSkiEvent.getSeasonId(), randomSkiEvent.getDayId(), randomSkiEvent.getSkierId()));
+            URIBuilder uri = new URIBuilder(URL);
+            uri.setPath(String.format("/%s/skiers/%d/seasons/%d/days/%d/skiers/%d",
+                    APP_NAME,
+                    randomSkiEvent.getResortId(),
+                    randomSkiEvent.getSeasonId(),
+                    randomSkiEvent.getDayId(),
+                    randomSkiEvent.getSkierId()));
             postMethod.setURI(uri.build());
 
 
-            postMethod.setEntity(new StringEntity(randomSkiEvent.getRequestBody().toString(), ContentType.APPLICATION_JSON));
+            postMethod.setEntity(new StringEntity(randomSkiEvent.getRequestBody().toString(),
+                    ContentType.APPLICATION_JSON));
 
             Timestamp arrivalTime = new Timestamp(System.currentTimeMillis());
 
@@ -102,8 +109,7 @@ public class Client2 implements Runnable {
 
             Timestamp responseTime = new Timestamp(System.currentTimeMillis());
 
-            Report report = new Report(arrivalTime.getTime(), responseTime.getTime(),
-                    (int) (responseTime.getTime() - arrivalTime.getTime()), RequestType.POST, statusCode);
+            Report report = new Report(arrivalTime.getTime(), responseTime.getTime(), (int) (responseTime.getTime() - arrivalTime.getTime()), RequestType.POST, statusCode);
 
             reportMap.get(Thread.currentThread().getName()).add(report);
 

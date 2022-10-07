@@ -24,10 +24,8 @@ import java.util.concurrent.TimeUnit;
 
 public class Client implements Runnable {
     private final int TOTAL_NUM_OF_REQUEST = 1000;
-    private static final String localURL = "http://localhost:8080/";
-    private static final String EC2URL = "http://ec2-34-212-74-236.us-west-2.compute.amazonaws.com:8080/";
-    private static final String APP_NAME = "Java_Servlet_war_exploded";
-    private static final String EC2_APP_NAME = "Java_Servlet_war";
+    private final String URL;
+    private final String APP_NAME;
     private final Object synchronizationObject;
     private final HttpClient client;
     private final BlockingQueue<SkiEvent> queue;
@@ -35,11 +33,13 @@ public class Client implements Runnable {
     private final boolean isFirst32;
 
 
-    public Client(BlockingQueue<SkiEvent> queue, Status status, boolean isFirst32) {
+    public Client(BlockingQueue<SkiEvent> queue, Status status, boolean isFirst32, String url, String appName, String port) {
         this.isFirst32 = isFirst32;
         this.queue = queue;
         this.synchronizationObject = new Object();
         this.status = status;
+        this.URL = String.format("%s:%s", url, port);
+        this.APP_NAME = appName;
         this.client = HttpClients
                 .custom()
                 .addInterceptorLast(new HttpResponseInterceptor() {
@@ -56,7 +56,7 @@ public class Client implements Runnable {
 
     @Override
     public void run() {
-        if (isFirst32) {
+        if (this.isFirst32) {
             for (int i = 0; i < TOTAL_NUM_OF_REQUEST; i++) {
                 this.sendRequest();
             }
@@ -75,16 +75,16 @@ public class Client implements Runnable {
     }
 
     private void sendRequest() {
-        HttpPost postMethod = new HttpPost(EC2URL);
+        HttpPost postMethod = new HttpPost(URL);
         SkiEvent randomSkiEvent = null;
         try {
             randomSkiEvent = queue.poll(100, TimeUnit.MILLISECONDS);
             if (randomSkiEvent == null)
                 return;
 
-            URIBuilder uri = new URIBuilder(EC2URL);
-            uri.setPath(String.format("%s/skiers/%d/seasons/%d/days/%d/skiers/%d",
-                    EC2_APP_NAME,
+            URIBuilder uri = new URIBuilder(URL);
+            uri.setPath(String.format("/%s/skiers/%d/seasons/%d/days/%d/skiers/%d",
+                    APP_NAME,
                     randomSkiEvent.getResortId(),
                     randomSkiEvent.getSeasonId(),
                     randomSkiEvent.getDayId(),
