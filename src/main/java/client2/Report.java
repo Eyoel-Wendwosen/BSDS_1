@@ -1,5 +1,7 @@
 package client2;
 
+import utils.RequestType;
+
 import java.util.List;
 
 public class Report {
