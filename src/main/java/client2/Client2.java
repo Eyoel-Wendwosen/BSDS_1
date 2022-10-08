@@ -13,6 +13,7 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import utils.NetworkHandler;
+import utils.RequestType;
 import utils.SkiEvent;
 import utils.Status;
 
@@ -113,9 +114,6 @@ public class Client2 implements Runnable {
 
             reportMap.get(Thread.currentThread().getName()).add(report);
 
-//            String responseBody = EntityUtils.toString(httpResponse.getEntity());
-//            System.out.println("Response: " + responseBody);
-//
         } catch (URISyntaxException | IOException e) {
             this.status.incrementFailedRequest();
         } catch (InterruptedException e) {
